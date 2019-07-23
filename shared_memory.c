@@ -1,7 +1,10 @@
-//main.c
+//shared_memory.c
+/*
+    ADD DESCRIPTION AND DESIGN COMMENTS
+*/
 
 #include <string.h>
-#include <unistd.h> //probably not necessary?
+#include <unistd.h> //contains ftruncate... supposedly
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
