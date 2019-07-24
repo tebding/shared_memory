@@ -1,8 +1,8 @@
 #------------------------------------------------------------------------------
 
-FLAGS   = -std=gnu99 -Wall
-SOURCES = shared_memory.c #test_shared_memory.c
-OBJECTS = shared_memory.o #test_shared_memory.o
+FLAGS   = -std=c99 -Wall
+SOURCES = shared_memory.c 
+OBJECTS = shared_memory.o 
 #HEADERS = shared_memory.h
 EXEBIN  = shared_memory
 
@@ -12,7 +12,7 @@ $(EXEBIN) : $(OBJECTS) #$(HEADERS)
 	gcc -ggdb -o $(EXEBIN) $(OBJECTS) -lrt
 
 $(OBJECTS) : $(SOURCES) #$(HEADERS)
-	gcc -ggdb -c $(FLAGS) $(SOURCES)
+	gcc -ggdb -c $(FLAGS) -D_XOPEN_SOURCE=500 $(SOURCES)
 
 clean :
 	rm -f $(EXEBIN) $(OBJECTS)

@@ -1,0 +1,26 @@
+README
+
+USAGE: ./shared_memory FILENAME MODE
+
+Modes:
+    1 = write: writes the input key/value pair(s) to shared memory, possibly overwriting
+older data.
+    2 = delete: removes the input pair(s) from the shared memory, if present.
+    3 = print: prints the input pair(s) from shared memory, if present.
+
+The objective was to write a program that utilizes shared memory to maintain a
+list of key/value pairs across executions of the program.
+
+I opted to use the POSIX standard mmap() + shm_open() technique for this task,
+which means it uses a file-backed shared memory system. (to unlink and delete
+the shared memory is a simple matter, but would need to be implemented)
+
+I opted to make the table hold 1023 items (because prime numbers tend to result
+in fewer hash collisions when using modular hashing, as I decided to do), but
+that is easily adjustable based on the needs of the program.
+The same thing goes for the size of each item's value field: I chose 1k, but it
+would be trivial to change that as desired.
+
+Most of my design decisions are commented in the code where they show up, for
+quick reference to why I wrote what I did (for example, why I chose to do a
+secure delete despite it being slower than a shallow delete is explained).

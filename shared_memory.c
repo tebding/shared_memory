@@ -1,6 +1,5 @@
-//shared_memory.c
-/*
-    ADD DESCRIPTION + DESIGN COMMENTS
+/* shared_memory.c
+    Author: Tyler Ebding
 */
 
 #include <string.h>
@@ -47,15 +46,7 @@ int update_shm(FILE* fp, int fd) {
     while (fgets(buffer, BUFF_SIZE-1, fp) != NULL) { //read input line -> buffer
 
         tok = strtok(buffer, delim); //tokenize the line
-        //while (tok != NULL) {
-            /*
-            //check if next pair is on the same line:
-            //if it is, increment token to continue
-            if (strcmp(pairs[i-1].val, tok) == 0) {
-                tok = strtok(NULL, delim);
-            }
-            */
-            //iterates through tokens for each line.
+        //iterates through tokens for each line.
         pairs[i].key = atoi(tok); //first item is key
 printf("pairs[i].key = %d\n", pairs[i].key);
         tok = strtok(NULL, delim); //tokenize to 2nd item
@@ -67,7 +58,7 @@ printf("pairs[i].val = %s\n", pairs[i].val);
     }
 
     //map the "shm" file to an array of items named 'table'
-        item *table = mmap(NULL, SHM_SIZE, PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
+    item *table = mmap(NULL, SHM_SIZE*sizeof(item), PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
     //check for error in mapping
     if (table == MAP_FAILED) {
         perror("failed to mmap");
@@ -123,7 +114,10 @@ PARAMS:
 RETURN: 1 for error, 0 for success
 */   
 int delete_shm(FILE *fp, int fd) {
+    /* this attempt kept incurring segfaults. less efficient > non-functional
     int keys[SHM_SIZE]; //int array is cheaper than item array + still suffices
+    */
+    item keys[SHM_SIZE];
     int i, k, j = 0; //for iterating
     int index;
     char buffer[BUFF_SIZE]; //for file reading
@@ -132,24 +126,17 @@ int delete_shm(FILE *fp, int fd) {
 
     //read the input file into buffer, then tokenize the input. repeat until EOF
     while (fgets(buffer, BUFF_SIZE, fp) != NULL) { //read input line -> buffer
-printf("boop\n");
         tok = strtok(buffer, delim); //tokenize the line
-        //while (tok != NULL) {
-            //iterates through tokens for each line.
-            keys[i] = atoi(tok); //first item is key (converted to int)
-            printf("%d\n", keys[i]);
-        //tok = strtok(NULL, delim); //tokenize to 2nd item
-            //doesn't add 2nd one to array because only the keys are needed
-            i++;
-        //}
+        //iterates through tokens for each line.
+        keys[i].key = atoi(tok); //first item is key (converted to int)
+        tok = strtok(NULL, delim); //tokenize to 2nd item
+        strcpy(keys[i].val, tok);
+        i++;
         //repeats this loop for each line from the input file.
     }
-int foo;
-for (foo = 0; foo < 9; foo++) {
-printf("%d  ", keys[foo]);
-} 
+ 
     //requisite keys are now known. next: map the shared memory
-    item *table = mmap(NULL, SHM_SIZE, PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
+    item *table = mmap(NULL, SHM_SIZE*sizeof(item), PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
     //check for error with mapping
     if (table == MAP_FAILED) {
         perror("failed to mmap");
@@ -160,10 +147,10 @@ printf("%d  ", keys[foo]);
     //and delete the associated vals in shared memory
     while (j < i) {
         //hash newest index
-        index = hash(keys[j]);
+        index = hash(keys[j].key);
         
         //find items that were collisions
-        while ((table[index].key != keys[j]) && (k < SHM_SIZE)) {
+        while ((table[index].key != keys[j].key) && (k < SHM_SIZE)) {
             if (table[index].key == 0) {
                 break; //error handled in next 'if' statement
             }
@@ -171,7 +158,7 @@ printf("%d  ", keys[foo]);
             k++;
         }
         if (k >= SHM_SIZE || (table[index].key == 0 && table[index].val[0] == '\0')) {
-            fprintf(stderr, "ERROR: key \"%d\" not found.\n", keys[j]);
+            fprintf(stderr, "ERROR: key \"%d\" not found.\n", keys[j].key);
         }
 
         //actual deletion process
@@ -215,27 +202,25 @@ PARAMS:
 RETURN: -1 for failure, 0 for success
 */
 int print_shm(FILE *fp, int fd) {
-    int keys[SHM_SIZE]; //only keys are needed to ID index to print
+    item keys[SHM_SIZE]; 
     int i, index, k, j = 0; //for looping
     char buffer[BUFF_SIZE]; //for reading input file
     char* tok;
     const char delim[2] = " ";
-
+    
     //read the input file into buffer, then tokenize the input. repeat until EOF
     while (fgets(buffer, BUFF_SIZE, fp) != NULL) { //read input line -> buffer
         tok = strtok(buffer, delim); //tokenize the line
-        while (tok != NULL) {
-            //iterates through tokens for each line.
-            keys[i] = atoi(tok); //first item is key (converted to int)
-            tok = strtok(NULL, delim); //tokenize to 2nd item
-            //doesn't add 2nd one to array because only the keys are needed
-            i++;
-        }
+        //iterates through tokens for each line.
+        keys[i].key = atoi(tok); //first item is key (converted to int)
+        tok = strtok(NULL, delim); //tokenize to 2nd item
+        strcpy(keys[i].val, tok);
+        i++;
         //repeats this loop for each line from the input file.
     }
 
     //requisite keys are now known. next: map the shared memory
-    item *table = mmap(NULL, SHM_SIZE, PROT_READ, MAP_SHARED, fd, 0);
+    item *table = mmap(NULL, SHM_SIZE*sizeof(item), PROT_READ, MAP_SHARED, fd, 0);
     //check for error with mapping
     if (table == MAP_FAILED) {
         perror("failed to mmap");
@@ -244,9 +229,9 @@ int print_shm(FILE *fp, int fd) {
 
     //iterate through keys[] and print the associated vals
     while (j < i) {
-        index = hash(keys[j]);
+        index = hash(keys[j].key);
         //find items that were collisions
-        while ((table[index].key != keys[j]) && (k < SHM_SIZE)) {
+        while ((table[index].key != keys[j].key) && (k < SHM_SIZE)) {
             if (table[index].key == 0) {
                 break;
             }
@@ -254,8 +239,8 @@ int print_shm(FILE *fp, int fd) {
             k++; //track iterations to prevent infinite looping
         }
         //if key doesn't exist
-        if (k >= SHM_SIZE || table[index].key == 0) {
-            fprintf(stderr, "ERROR: key \"%d\" not found.\n", keys[j]);
+        if (k >= SHM_SIZE || ( (table[index].key == 0) && keys[j].key != 0) ) {
+            fprintf(stderr, "ERROR: key \"%d\" not found.\n", keys[j].key);
         }
         else {
             //executes the printing for the current key
@@ -270,9 +255,9 @@ int print_shm(FILE *fp, int fd) {
 
 void print_all(FILE* fp, int fd) {
     int i = 0;
-    item *table = mmap(NULL, SHM_SIZE, PROT_READ, MAP_SHARED, fd, 0);
+    item *table = mmap(NULL, SHM_SIZE*sizeof(item), PROT_READ, MAP_SHARED, fd, 0);
     while (i < SHM_SIZE) {
-        printf("table[%d].key: %d.\n", i, table[i].key);
+        printf("table[%d].key: %d\n", i, table[i].key);
         printf("table[%d].val: %s \n", i, table[i].val);
         i++;
     }
@@ -294,7 +279,7 @@ int main(int argc, char const *argv[]) {
     
     //set the shared memory file size
         //wasted on all calls after first, but I can't ID a fix yet.
-    off_t size = SHM_SIZE*sizeof(item);
+    off_t size = sizeof(item)*SHM_SIZE;
     if (ftruncate(fd, size) == -1) {
         perror("failed to set shared memory space size");
         exit(1);
@@ -328,7 +313,7 @@ int main(int argc, char const *argv[]) {
         }
     }
     else if (strcmp(argv[2], "3") == 0) { //print
-        print_all(fp, fd);
+        //print_all(fp, fd);
         if (print_shm(fp, fd) != 0) {
             fprintf(stderr, "failed to print from shared memory\n");
             return -1;
