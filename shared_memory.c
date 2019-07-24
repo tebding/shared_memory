@@ -132,17 +132,22 @@ int delete_shm(FILE *fp, int fd) {
 
     //read the input file into buffer, then tokenize the input. repeat until EOF
     while (fgets(buffer, BUFF_SIZE, fp) != NULL) { //read input line -> buffer
+printf("boop\n");
         tok = strtok(buffer, delim); //tokenize the line
-        while (tok != NULL) {
+        //while (tok != NULL) {
             //iterates through tokens for each line.
             keys[i] = atoi(tok); //first item is key (converted to int)
-            tok = strtok(NULL, delim); //tokenize to 2nd item
+            printf("%d\n", keys[i]);
+        //tok = strtok(NULL, delim); //tokenize to 2nd item
             //doesn't add 2nd one to array because only the keys are needed
             i++;
-        }
+        //}
         //repeats this loop for each line from the input file.
     }
-
+int foo;
+for (foo = 0; foo < 9; foo++) {
+printf("%d  ", keys[foo]);
+} 
     //requisite keys are now known. next: map the shared memory
     item *table = mmap(NULL, SHM_SIZE, PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
     //check for error with mapping
@@ -154,7 +159,9 @@ int delete_shm(FILE *fp, int fd) {
     //shared memory is now mapped. next: iterate through keys[],
     //and delete the associated vals in shared memory
     while (j < i) {
+        //hash newest index
         index = hash(keys[j]);
+        
         //find items that were collisions
         while ((table[index].key != keys[j]) && (k < SHM_SIZE)) {
             if (table[index].key == 0) {
@@ -163,7 +170,7 @@ int delete_shm(FILE *fp, int fd) {
             index++;
             k++;
         }
-        if (k >= SHM_SIZE || table[index].key == 0) {
+        if (k >= SHM_SIZE || (table[index].key == 0 && table[index].val[0] == '\0')) {
             fprintf(stderr, "ERROR: key \"%d\" not found.\n", keys[j]);
         }
 
@@ -265,11 +272,9 @@ void print_all(FILE* fp, int fd) {
     int i = 0;
     item *table = mmap(NULL, SHM_SIZE, PROT_READ, MAP_SHARED, fd, 0);
     while (i < SHM_SIZE) {
-        //if (table[i].key > 0) {
-            printf("table[%d].key: %d.\n", i, table[i].key);
-            printf("table[%d].val: %s \n", i, table[i].val);
-            i++;
-        //}
+        printf("table[%d].key: %d.\n", i, table[i].key);
+        printf("table[%d].val: %s \n", i, table[i].val);
+        i++;
     }
 }
 
@@ -323,7 +328,7 @@ int main(int argc, char const *argv[]) {
         }
     }
     else if (strcmp(argv[2], "3") == 0) { //print
-        //print_all(fp, fd);
+        print_all(fp, fd);
         if (print_shm(fp, fd) != 0) {
             fprintf(stderr, "failed to print from shared memory\n");
             return -1;
