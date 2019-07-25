@@ -3,7 +3,7 @@
 */
 
 #include <string.h>
-#include <unistd.h> //contains ftruncate... supposedly
+#include <unistd.h> //contains ftruncate
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +39,7 @@ int update_shm(FILE* fp, int fd) {
     char buffer[BUFF_SIZE]; //for reading from file
     char* tok;
     const char delim[2] = " ";
-    int i, j = 0, k = 0; //for handling loops + table
+    int i = 0, j = 0, k = 0; //for handling loops + table
     int index;
     
     
@@ -115,7 +115,7 @@ int delete_shm(FILE *fp, int fd) {
     int keys[SHM_SIZE]; //int array is cheaper than item array + still suffices
     */
     item keys[SHM_SIZE];
-    int i, k, j = 0; //for iterating
+    int i = 0, k = 0, j = 0; //for iterating
     int index;
     char buffer[BUFF_SIZE]; //for file reading
     char* tok;
@@ -148,7 +148,7 @@ int delete_shm(FILE *fp, int fd) {
         
         //find items that were collisions
         while ((table[index].key != keys[j].key) && (k < SHM_SIZE)) {
-            if (table[index].key == 0 && table[index].val[0] != '\0') {
+            if (table[index].key == 0 && table[index].val[0] == '\0') {
                 break; //error handled in next 'if-else' statement
             }
             index++;
@@ -200,7 +200,7 @@ RETURN: -1 for failure, 0 for success
 */
 int print_shm(FILE *fp, int fd) {
     item keys[SHM_SIZE]; 
-    int i, index, k, j = 0; //for looping
+    int i = 0, index, k = 0, j = 0; //for looping
     char buffer[BUFF_SIZE]; //for reading input file
     char* tok;
     const char delim[2] = " ";
